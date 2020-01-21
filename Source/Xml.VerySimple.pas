@@ -800,12 +800,34 @@ end;
 
 
 class function TXmlVerySimple.Unescape(const Value: String): String;
+const
+  ESCAPE_CHAR = '&';
+  END_ESCAPE_CHAR = ';';
+  SPECIAL_CHAR = '#';
+  ESCAPE_VALUES: array[1..5] of String = ('lt', 'gt', 'quot', 'apos', 'amp');
+  ESCAPE_NEW_VALUES: array[1..5] of String = ('<', '>', '"', '''', '&');
+
 begin
-  Result := ReplaceStr(Value, '&lt;', '<');
-  Result := ReplaceStr(Result, '&gt;', '>');
-  Result := ReplaceStr(Result, '&quot;', '"');
-  Result := ReplaceStr(Result, '&apos;', '''');
-  Result := ReplaceStr(Result, '&amp;', '&');
+  Result := Value;
+
+  if not Result.IsEmpty then
+  begin
+    var StartPosition := Result.IndexOf(ESCAPE_CHAR);
+
+    while StartPosition > -1 do
+    begin
+      var Escape := Result.Substring(StartPosition, Succ(Result.IndexOf(END_ESCAPE_CHAR, StartPosition)) - StartPosition);
+
+      if Escape[2] = SPECIAL_CHAR then
+        Result := Result.Replace(Escape, Char(Escape.Substring(2, 3).ToInteger))
+      else
+        for var A := Low(ESCAPE_VALUES) to High(ESCAPE_VALUES) do
+          if Escape = ESCAPE_CHAR + ESCAPE_VALUES[A] + END_ESCAPE_CHAR then
+            Result := Result.Replace(ESCAPE_CHAR + ESCAPE_VALUES[A] + END_ESCAPE_CHAR, ESCAPE_NEW_VALUES[A]);
+
+      StartPosition := Result.IndexOf(ESCAPE_CHAR, StartPosition);
+    end;
+  end;
 end;
 
 procedure TXmlVerySimple.SetText(const Value: String);
